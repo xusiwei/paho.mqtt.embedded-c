@@ -36,11 +36,13 @@ static_library("paho-embed-mqtt3cc") {
     ]
 
     cflags = [
-        "-Wno-sign-compare"
+        "-Wno-sign-compare",
+        "-Wno-unused-parameter",
     ]
 
     include_dirs = [
         "ohos",
-        "../../MQTTPacket/src"
+        "../../MQTTPacket/src",
+        "//kernel/liteos_m/kal"
     ]
 }

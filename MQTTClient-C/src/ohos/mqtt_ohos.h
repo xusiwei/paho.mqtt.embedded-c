@@ -1,26 +1,71 @@
+/*
+ * Copyright (c) 2020, HiHope Community.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 #ifndef MQTT_OHOS_H
 #define MQTT_OHOS_H
 
-typedef struct Timer
-{
-    int dummy;
+#include <sys/time.h>
+#include "cmsis_os2.h"
+
+typedef struct {
+    struct timeval endTime;
 } Timer;
 
-void TimerInit(Timer*);
-char TimerIsExpired(Timer*);
-void TimerCountdownMS(Timer*, unsigned int);
-void TimerCountdown(Timer*, unsigned int);
-int TimerLeftMS(Timer*);
+void TimerInit(Timer* timer);
+char TimerIsExpired(Timer* timer);
+void TimerCountdownMS(Timer* timer, unsigned int ms);
+void TimerCountdown(Timer* timer, unsigned int seconds);
+int TimerLeftMS(Timer* timer);
 
-typedef struct Network
-{
-	int my_socket;
-	int (*mqttread) (struct Network*, unsigned char*, int, int);
-	int (*mqttwrite) (struct Network*, unsigned char*, int, int);
+typedef struct Network {
+    int socket;
+    int (*mqttread)(struct Network*, unsigned char*, int, int);
+    int (*mqttwrite)(struct Network*, unsigned char*, int, int);
 } Network;
 
-void NetworkInit(Network*);
-int NetworkConnect(Network*, char*, int);
-void NetworkDisconnect(Network*);
+void NetworkInit(Network* network);
+int NetworkConnect(Network* network, char* host, int port);
+void NetworkDisconnect(Network* network);
+
+#if defined(MQTT_TASK)
+typedef struct {
+    osMutexId_t mutex;
+} Mutex;
+
+void MutexInit(Mutex* mutex);
+int MutexLock(Mutex* mutex);
+int MutexUnlock(Mutex* mutex);
+
+typedef struct {
+    osThreadId_t thread;
+} Thread;
+
+int ThreadStart(Thread* thread, void (*fn)(void*), void* arg);
+#endif
 
 #endif // MQTT_OHOS_H
