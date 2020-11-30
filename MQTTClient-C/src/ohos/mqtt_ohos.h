@@ -60,6 +60,7 @@ typedef struct {
 void MutexInit(Mutex* mutex);
 int MutexLock(Mutex* mutex);
 int MutexUnlock(Mutex* mutex);
+void MutexDeinit(Mutex* mutex);
 
 typedef struct {
     osThreadId_t thread;

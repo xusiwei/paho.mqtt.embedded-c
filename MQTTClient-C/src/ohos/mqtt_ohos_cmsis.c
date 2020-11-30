@@ -27,6 +27,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "mqtt_ohos.h"
+#include "lwip/sockets.h"
+#include "lwip/netdb.h"
 
 // static volatile int g_lastSeconds = 0;
 
@@ -92,15 +94,45 @@ int TimerLeftMS(Timer* timer)
 }
 
 
-static int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
+static int NetworkRead(Network* network, unsigned char* buffer, int len, int timeoutMs)
 {
-    return 0;
+    struct timeval interval = {timeoutMs / 1000, (timeoutMs % 1000) * 1000};
+    if (interval.tv_sec < 0 || (interval.tv_sec == 0 && interval.tv_usec <= 0))
+    {
+        interval.tv_sec = 0;
+        interval.tv_usec = 100;
+    }
+
+    setsockopt(network->socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval, sizeof(struct timeval));
+
+    int bytes = 0;
+    while (bytes < len) {
+        int rc = recv(network->socket, &buffer[bytes], (size_t)(len - bytes), 0);
+        if (rc == -1) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                bytes = -1;
+            }
+            break;
+        } else if (rc == 0) {
+            bytes = 0;
+            break;
+        } else {
+            bytes += rc;
+        }
+    }
+    return bytes;
 }
 
 
-static int NetworkWrite(Network* n, unsigned char* buffer, int len, int timeout_ms)
+static int NetworkWrite(Network* network, unsigned char* buffer, int len, int timeoutMs)
 {
-    return 0;
+    struct timeval tv;
+
+    tv.tv_sec = 0;
+    tv.tv_usec = timeoutMs * 1000;  // Not init'ing this can cause strange errors
+
+    setsockopt(network->socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv,sizeof(struct timeval));
+    return send(network->socket, buffer, len, 0);
 }
 
 void NetworkInit(Network* network)
@@ -112,32 +144,81 @@ void NetworkInit(Network* network)
 
 int NetworkConnect(Network* network, char* host, int port)
 {
-    return 0;
+    int rc = -1;
+    struct sockaddr_in address;
+    struct addrinfo *result = NULL;
+    struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
+
+    if ((rc = getaddrinfo(host, NULL, &hints, &result)) == 0) {
+        struct addrinfo* res = result;
+
+        /* prefer ip4 addresses */
+        while (res) {
+            if (res->ai_family == AF_INET) {
+                result = res;
+                break;
+            }
+            res = res->ai_next;
+        }
+
+        if (result->ai_family == AF_INET) {
+            address.sin_port = htons(port);
+            address.sin_family = AF_INET;
+            address.sin_addr = ((struct sockaddr_in*)(result->ai_addr))->sin_addr;
+        } else {
+            rc = -1;
+        }
+        freeaddrinfo(result);
+    }
+
+    if (rc == 0) {
+        network->socket = socket(AF_INET, SOCK_STREAM, 0);
+        if (network->socket != -1) {
+            rc = connect(network->socket, (struct sockaddr*)&address, sizeof(address));
+        } else {
+            rc = -1;
+        }
+    }
+
+    return rc;
 }
 
 void NetworkDisconnect(Network* network)
 {
-
+    lwip_close(network->socket);
 }
 
 #if defined(MQTT_TASK)
-void MutexInit(Mutex* mutex)
+void MutexInit(Mutex* m)
 {
-
+    m->mutex = osMutexNew(NULL);
 }
 
-int MutexLock(Mutex* mutex)
+int MutexLock(Mutex* m)
 {
+    return osMutexAcquire(m->mutex, osWaitForever);
+}
+
+int MutexUnlock(Mutex* m)
+{
+    return osMutexRelease(m->mutex);
+}
+
+void MutexDeinit(Mutex* m)
+{
+    osMutexDelete(m->mutex);
+}
+
+int ThreadStart(Thread* t, void (*fn)(void*), void* arg)
+{
+    osThreadAttr_t attr = {0};
+    attr.stack_size = 8192;
+    attr.priority = osPriorityNormal;
+
+    t->thread = osThreadNew(fn, arg, &attr);
+    if (t->thread == NULL) {
+        return -1;
+    }
     return 0;
-}
-
-int MutexUnlock(Mutex* mutex)
-{
-    return 0;
-}
-
-int ThreadStart(Thread* thread, void (*fn)(void*), void* arg)
-{
-
 }
 #endif

@@ -32,6 +32,7 @@ static_library("paho-embed-mqtt3cc") {
     ]
 
     defines = [
+        "MQTT_TASK",
         "MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h"
     ]
 
@@ -43,6 +44,7 @@ static_library("paho-embed-mqtt3cc") {
     include_dirs = [
         "ohos",
         "../../MQTTPacket/src",
-        "//kernel/liteos_m/kal"
+        "//kernel/liteos_m/kal",
+        "//vendor/hisi/hi3861/hi3861/third_party/lwip_sack/include"
     ]
 }
