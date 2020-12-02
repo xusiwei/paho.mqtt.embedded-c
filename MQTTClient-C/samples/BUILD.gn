@@ -25,31 +25,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mqtt_packet_common_sources = [
-    "MQTTFormat.c",
-    "MQTTPacket.c",
-    "MQTTSerializePublish.c",
-    "MQTTDeserializePublish.c",
-]
-
-mqtt_packet_client_sources = [
-    "MQTTConnectClient.c",
-    "MQTTSubscribeClient.c",
-    "MQTTUnsubscribeClient.c"
-]
-
-mqtt_packet_server_sources = [
-    "MQTTConnectServer.c",
-    "MQTTSubscribeServer.c",
-    "MQTTUnsubscribeServer.c",
-]
-
-static_library("paho-embed-mqtt3c") {
-    cflags = [
-        "-Wno-unused-parameter"
+group("paho-mqtt-samples") {
+    deps = [
+        "ohos:mqtt_echo"
     ]
-
-    sources = mqtt_packet_common_sources
-    sources += mqtt_packet_client_sources
-    sources += mqtt_packet_server_sources
 }

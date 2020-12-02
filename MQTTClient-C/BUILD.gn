@@ -27,6 +27,7 @@
 
 group("paho-mqttclient") {
     deps = [
-        "src:paho-embed-mqtt3cc"
+        "src:paho-embed-mqtt3cc",
+        "samples:paho-mqtt-samples"
     ]
 }

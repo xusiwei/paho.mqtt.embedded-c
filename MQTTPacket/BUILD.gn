@@ -27,8 +27,8 @@
 
 group("paho-mqttpacket") {
     deps = [
-        # "src:paho-embed-mqtt3c",
-        "src:MQTTPacketClient",
+        "src:paho-embed-mqtt3c",
+        # "src:MQTTPacketClient",
         # "src:MQTTPacketServer",
     ]
 }
