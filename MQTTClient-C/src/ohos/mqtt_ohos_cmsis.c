@@ -30,35 +30,38 @@
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 
-// static volatile int g_lastSeconds = 0;
+#define US_PER_SEC (1000*1000)
 
-#define MS_PER_S (1000)
-#define US_PER_S (1000*1000)
+static uint32_t g_tickPerSec = 0;
+static uint32_t g_sysPerSec = 0;
+static uint32_t g_sysPerTick = 0;
 
-int GetTimeVal(struct timeval* now)
+static int GetCurrentTime(struct timeval* now)
 {
     if (now == NULL) {
         return -1;
     }
 
-    uint32_t tickPerSec = osKernelGetTickFreq();
-    uint32_t sysPerSec = osKernelGetSysTimerFreq();
-    uint32_t sysPerTick = sysPerSec / tickPerSec;
-
     uint32_t tickCount = osKernelGetTickCount();
-    now->tv_sec = tickCount / tickPerSec;
-    now->tv_usec = (tickCount % tickPerSec) * (US_PER_S / tickPerSec);
+    now->tv_sec = tickCount / g_tickPerSec;
+    now->tv_usec = (tickCount % g_tickPerSec) * (US_PER_SEC / g_tickPerSec);
 
-    uint64_t sysCount = osKernelGetSysTimerCount() % sysPerTick;
-    now->tv_usec += sysCount * US_PER_S / sysPerSec;
+    uint64_t sysCount = osKernelGetSysTimerCount() % g_sysPerTick;
+    now->tv_usec += sysCount * US_PER_SEC / g_sysPerSec;
     return 0;
 }
 
-#define gettimeofday(tv, tz) GetTimeVal(tv)
+#define gettimeofday(tv, tz) GetCurrentTime(tv)
 
 void TimerInit(Timer* timer)
 {
     timer->endTime = (struct timeval){0, 0};
+
+    if (g_tickPerSec == 0) {
+        g_tickPerSec = osKernelGetTickFreq();
+        g_sysPerSec = osKernelGetSysTimerFreq();
+        g_sysPerTick = g_sysPerSec / g_tickPerSec;
+    }
 }
 
 char TimerIsExpired(Timer* timer)
@@ -93,6 +96,7 @@ int TimerLeftMS(Timer* timer)
     return (res.tv_sec < 0) ? 0 : res.tv_sec * 1000 + res.tv_usec / 1000;
 }
 
+#undef gettimeofday
 
 static int NetworkRead(Network* network, unsigned char* buffer, int len, int timeoutMs)
 {
@@ -152,9 +156,8 @@ int NetworkConnect(Network* network, char* host, int port)
     if ((rc = getaddrinfo(host, NULL, &hints, &result)) == 0) {
         struct addrinfo* res = result;
 
-        /* prefer ip4 addresses */
         while (res) {
-            if (res->ai_family == AF_INET) {
+            if (res->ai_family == AF_INET) { /* prefer ip4 addresses */
                 result = res;
                 break;
             }
@@ -179,7 +182,6 @@ int NetworkConnect(Network* network, char* host, int port)
             rc = -1;
         }
     }
-
     return rc;
 }
 

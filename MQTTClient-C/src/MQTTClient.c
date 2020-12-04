@@ -76,6 +76,7 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
     TimerInit(&c->last_received);
 #if defined(MQTT_TASK)
 	  MutexInit(&c->mutex);
+    c->running = 1;
 #endif
 }
 
@@ -370,7 +371,7 @@ void MQTTRun(void* parm)
 
 	TimerInit(&timer);
 
-	while (1)
+	while (c->running)
 	{
 #if defined(MQTT_TASK)
 		MutexLock(&c->mutex);
@@ -388,6 +389,12 @@ void MQTTRun(void* parm)
 int MQTTStartTask(MQTTClient* client)
 {
 	return ThreadStart(&client->thread, &MQTTRun, client);
+}
+
+int MQTTStopTask(MQTTClient* client)
+{
+    client->running = 0;
+    return 0;
 }
 #endif
 

@@ -26,13 +26,34 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "ohos_init.h"
 #include "wifiiot_at.h"
+#include "mqtt_echo.h"
 
-
-
-void AtRegisterEntry(void)
+static unsigned int MqttTestCmd(int argc, const char **argv)
 {
+    printf("%s @ %s +%d\r\n", __FUNCTION__, __FILE__, __LINE__);
+    if (argc < 2) {
+        printf("Usage: AT+MQTT=host,port\r\n");
+        printf("FAIL\r\n");
+        return 1;
+    }
 
+    const char* host = argv[1];
+    unsigned short port = atoi(argv[2]);
+    printf("MQTT test with %s %d start.\r\n", host, port);
+    return MqttEcho(host, port);
 }
-SYS_RUN(AtRegisterEntry);
+
+void MqttAtEntry(void)
+{
+    AtCmdTbl cmdTable;
+    cmdTable.atCmdName = "+MQTT";
+    cmdTable.atCmdLen = strlen(cmdTable.atCmdName);
+    cmdTable.atSetupCmd = MqttTestCmd;
+    AtRegisterCmd(&cmdTable, 1);
+}
+SYS_RUN(MqttAtEntry);

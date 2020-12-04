@@ -32,43 +32,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* OHOS includes. */
-#include "cmsis_os2.h"
-
 /* LWIP includes. */
 #include "lwip/sockets.h"
 
 #include "MQTTClient.h"
 
-void messageArrived(MessageData* data)
+#define TSET_MSG_NUM 10
+
+void OnMessageArrived(MessageData* data)
 {
     printf("Message arrived on topic %.*s: %.*s\n", data->topicName->lenstring.len, data->topicName->lenstring.data,
         data->message->payloadlen, data->message->payload);
 }
 
-static void MqttEchoTask(void* arg)
+int MqttEcho(const char* host, unsigned short port)
 {
-	(void) arg;
-    /* connect to m2m.eclipse.org, subscribe to a topic, send and receive messages regularly every 1 sec */
-    MQTTClient client;
-    Network network;
+    MQTTClient client = {0};
+    Network network = {0};
     unsigned char sendbuf[80], readbuf[80];
-    int rc = 0,
-        count = 0;
+    int rc = 0, i = 0;
     MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
     NetworkInit(&network);
     MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
 
-    char* address = "iot.eclipse.org";
-    if ((rc = NetworkConnect(&network, address, 1883)) != 0) {
-        printf("Return code from network connect is %d\n", rc);
+    if ((rc = NetworkConnect(&network, (char*) host, port)) != 0) {
+        printf("Return code from NetworkConnect is %d\n", rc);
+        return -1;
 	}
 
-#if defined(MQTT_TASK)
-    if ((rc = MQTTStartTask(&client)) != 0)
-        printf("Return code from start tasks is %d\n", rc);
-#endif
+    if ((rc = MQTTStartTask(&client)) != 0) {
+        printf("Return code from MQTTStartTask is %d\n", rc);
+        return -1;
+    }
 
     connectData.MQTTVersion = 3;
     connectData.clientID.cstring = "OHOS_sample";
@@ -78,38 +74,27 @@ static void MqttEchoTask(void* arg)
     else
         printf("MQTT Connected\n");
 
-    if ((rc = MQTTSubscribe(&client, "OHOS/sample/#", 2, messageArrived)) != 0)
+    if ((rc = MQTTSubscribe(&client, "OHOS/sample/#", 2, OnMessageArrived)) != 0)
         printf("Return code from MQTT subscribe is %d\n", rc);
 
-    while (++count)
-    {
+    for (i = 1; i <= TSET_MSG_NUM; i++) {
         MQTTMessage message;
         char payload[30];
 
         message.qos = 1;
         message.retained = 0;
         message.payload = payload;
-        sprintf(payload, "message number %d", count);
+        sprintf(payload, "message number %d", i);
         message.payloadlen = strlen(payload);
 
-        if ((rc = MQTTPublish(&client, "OHOS/sample/a", &message)) != 0)
+        if ((rc = MQTTPublish(&client, "OHOS/sample/a", &message)) != 0) {
             printf("Return code from MQTT publish is %d\n", rc);
-#if !defined(MQTT_TASK)
-        if ((rc = MQTTYield(&client, 1000)) != 0)
-            printf("Return code from yield is %d\n", rc);
-#endif
+        }
     }
-}
 
-
-void StartMqttTask(void)
-{
-    osThreadAttr_t attr = {0};
-    attr.name = "MqttEchoTask";
-    attr.stack_size = 10240;
-    attr.priority = osPriorityNormal;
-
-    if (osThreadNew(MqttEchoTask, NULL, &attr) == NULL) {
-        printf("create MqttEchoTask failed!\n");
+    if ((rc = MQTTStopTask(&client)) != 0) {
+        printf("Return code from MQTTStopTask is %d\n", rc);
+        return -1;
     }
+    return 0;
 }

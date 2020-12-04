@@ -28,6 +28,7 @@
 static_library("mqtt_echo") {
     sources = [
         "mqtt_echo.c",
+        "mqtt_at_entry.c"
     ]
 
     defines = [
@@ -45,6 +46,7 @@ static_library("mqtt_echo") {
         "../../src/ohos",
         "../../../MQTTPacket/src",
         "//kernel/liteos_m/kal",
+        "//base/iot_hardware/interfaces/kits/wifiiot_lite",
         "//vendor/hisi/hi3861/hi3861/third_party/lwip_sack/include"
     ]
 }
