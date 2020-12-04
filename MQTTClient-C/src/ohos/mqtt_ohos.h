@@ -66,6 +66,10 @@ typedef struct {
     osThreadId_t thread;
 } Thread;
 
+#ifndef MQTT_TASK_STACK_SIZE
+#define MQTT_TASK_STACK_SIZE 4096
+#endif
+
 int ThreadStart(Thread* thread, void (*fn)(void*), void* arg);
 #endif
 

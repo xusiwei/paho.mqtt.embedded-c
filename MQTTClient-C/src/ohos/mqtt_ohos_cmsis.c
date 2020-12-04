@@ -214,7 +214,7 @@ void MutexDeinit(Mutex* m)
 int ThreadStart(Thread* t, void (*fn)(void*), void* arg)
 {
     osThreadAttr_t attr = {0};
-    attr.stack_size = 8192;
+    attr.stack_size = MQTT_TASK_STACK_SIZE;
     attr.priority = osPriorityNormal;
 
     t->thread = osThreadNew(fn, arg, &attr);

@@ -29,6 +29,8 @@
 #ifndef MQTT_ECHO_H
 #define MQTT_ECHO_H
 
-int MqttEcho(const char* host, unsigned short port);
+void MqttEchoInit(void);
+int MqttEchoTest(const char* host, unsigned short port);
+void MqttEchoDeinit(void);
 
 #endif

@@ -42,18 +42,35 @@ static unsigned int MqttTestCmd(int argc, const char **argv)
         return 1;
     }
 
-    const char* host = argv[1];
-    unsigned short port = atoi(argv[2]);
+    printf("argc = %d, argv =\r\n", argc);
+    for (int i = 0; i < argc; i++) {
+        printf("argv[%d] = %s\r\n", i, argv[i]);
+    }
+
+    const char* host = argv[0];
+    unsigned short port = atoi(argv[1]);
     printf("MQTT test with %s %d start.\r\n", host, port);
-    return MqttEcho(host, port);
+
+    int rc = MqttEchoTest(host, port);
+    if (rc != 0) {
+        printf("ERROR\r\n");
+        return 1;
+    }
+    printf("OK\r\n");
+    return 0;
 }
 
 void MqttAtEntry(void)
 {
-    AtCmdTbl cmdTable;
+    static AtCmdTbl cmdTable = {0};
     cmdTable.atCmdName = "+MQTT";
     cmdTable.atCmdLen = strlen(cmdTable.atCmdName);
     cmdTable.atSetupCmd = MqttTestCmd;
-    AtRegisterCmd(&cmdTable, 1);
+
+    MqttEchoInit();
+
+    if (AtRegisterCmd(&cmdTable, 1) != 0) {
+        printf("AtRegisterCmd failed!\r\n");
+    }
 }
 SYS_RUN(MqttAtEntry);
