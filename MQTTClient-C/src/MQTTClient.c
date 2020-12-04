@@ -371,10 +371,11 @@ void MQTTRun(void* parm)
 
 	TimerInit(&timer);
 
-	while (c->running)
-	{
+	while (1)
+    {
 #if defined(MQTT_TASK)
 		MutexLock(&c->mutex);
+        if (!c->running) break;
 #endif
 		TimerCountdownMS(&timer, 500); /* Don't wait too long if no traffic is incoming */
 		cycle(c, &timer);

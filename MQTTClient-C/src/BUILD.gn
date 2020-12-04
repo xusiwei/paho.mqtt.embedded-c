@@ -25,26 +25,53 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-static_library("paho-embed-mqtt3cc") {
-    sources = [
-        "MQTTClient.c",
+ohos_sources = [
+    "MQTTClient.c"
+]
+
+ohos_defines = []
+
+ohos_includes = [
+    "../../MQTTPacket/src"
+]
+
+if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
+    ohos_sources += [
         "ohos/mqtt_ohos_cmsis.c"
     ]
-
-    defines = [
+    ohos_defines += [
         "MQTT_TASK",
+        "OHOS_CMSIS",
         "MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h"
     ]
+    ohos_includes += [
+        "ohos",
+        "//kernel/liteos_m/kal",
+        "//vendor/hisi/hi3861/hi3861/third_party/lwip_sack/include"
+    ]
+} else {
+    ohos_sources += [
+        "linux/MQTTLinux.c",
+        "ohos/mqtt_ohos_posix.c"
+    ]
+    ohos_defines += [
+        "_GNU_SOURCE",
+        "MQTTCLIENT_PLATFORM_HEADER=MQTTLinux.h"
+    ]
+    ohos_includes += [
+        "linux"
+    ]
+}
+
+static_library("paho-embed-mqtt3cc") {
+    sources = ohos_sources
+
+    defines = ohos_defines
 
     cflags = [
         "-Wno-sign-compare",
         "-Wno-unused-parameter",
     ]
 
-    include_dirs = [
-        "ohos",
-        "../../MQTTPacket/src",
-        "//kernel/liteos_m/kal",
-        "//vendor/hisi/hi3861/hi3861/third_party/lwip_sack/include"
-    ]
+    include_dirs = ohos_includes
 }

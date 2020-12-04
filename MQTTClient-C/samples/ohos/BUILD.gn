@@ -25,28 +25,57 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-static_library("mqtt_echo") {
-    sources = [
-        "mqtt_echo.c",
+ohos_sources = [
+   "mqtt_echo.c",
+]
+
+ohos_includes = [
+    "../../src",
+    "../../src/ohos",
+    "../../../MQTTPacket/src",
+]
+
+ohos_cflags = [
+    "-Wno-sign-compare",
+    "-Wno-unused-parameter",
+]
+
+ohos_defines = [
+    "MQTT_TASK",
+    "MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h"
+]
+
+if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
+    ohos_sources += [
         "mqtt_at_entry.c"
     ]
 
-    defines = [
-        "MQTT_TASK",
-        "MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h"
-    ]
-
-    cflags = [
-        "-Wno-sign-compare",
-        "-Wno-unused-parameter",
-    ]
-
-    include_dirs = [
-        "../../src",
-        "../../src/ohos",
-        "../../../MQTTPacket/src",
+    ohos_includes += [
         "//kernel/liteos_m/kal",
         "//base/iot_hardware/interfaces/kits/wifiiot_lite",
         "//vendor/hisi/hi3861/hi3861/third_party/lwip_sack/include"
     ]
+
+    static_library("mqtt_echo") {
+        cflags = ohos_cflags
+        defines = ohos_defines
+        sources = ohos_sources
+        include_dirs = ohos_includes
+    }
+} else {
+    ohos_sources += [
+        "mqtt_echo_main.c"
+    ]
+
+    deps = [
+        "../../src:paho-embed-mqtt3cc",
+        "../../../MQTTPacket/src:paho-embed-mqtt3c",
+    ]
+
+    executable("mqtt_echo") {
+        cflags = ohos_cflags
+        defines = ohos_defines
+        sources = ohos_sources
+        include_dirs = ohos_includes
+    }
 }

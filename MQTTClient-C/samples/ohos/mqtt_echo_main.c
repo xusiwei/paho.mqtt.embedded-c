@@ -26,67 +26,21 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef MQTT_OHOS_H
-#define MQTT_OHOS_H
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "mqtt_echo.h"
 
-#include <sys/time.h>
+int main(int argc, char* argv[])
+{
+    const char* host = argv[1];
+    unsigned short port = atoi(argv[2]);
+    printf("MQTT test with %s %d start.\r\n", host, port);
 
-typedef struct {
-    struct timeval endTime;
-} Timer;
-
-void TimerInit(Timer* timer);
-char TimerIsExpired(Timer* timer);
-void TimerCountdownMS(Timer* timer, unsigned int ms);
-void TimerCountdown(Timer* timer, unsigned int seconds);
-int TimerLeftMS(Timer* timer);
-
-typedef struct Network {
-    int socket;
-    int (*mqttread)(struct Network*, unsigned char*, int, int);
-    int (*mqttwrite)(struct Network*, unsigned char*, int, int);
-} Network;
-
-void NetworkInit(Network* network);
-int NetworkConnect(Network* network, char* host, int port);
-void NetworkDisconnect(Network* network);
-
-#if defined(MQTT_TASK)
-
-#ifdef OHOS_CMSIS
-#include "cmsis_os2.h"
-
-typedef struct {
-    osMutexId_t mutex;
-} Mutex;
-
-typedef struct {
-    osThreadId_t thread;
-} Thread;
-
-#ifndef MQTT_TASK_STACK_SIZE
-#define MQTT_TASK_STACK_SIZE 4096
-#endif
-
-#else // OHOS_CMSIS
-#include <pthread.h>
-
-typedef struct {
-    pthread_mutex_t mutex;
-} Mutex;
-
-typedef struct {
-    pthread_t thread;
-} Thread;
-
-#endif // OHOS_CMSIS
-
-void MutexInit(Mutex* mutex);
-int MutexLock(Mutex* mutex);
-int MutexUnlock(Mutex* mutex);
-void MutexDeinit(Mutex* mutex);
-
-int ThreadStart(Thread* thread, void (*fn)(void*), void* arg);
-#endif
-
-#endif // MQTT_OHOS_H
+    int rc = MqttEchoTest(host, port);
+    if (rc != 0) {
+        printf("ERROR\r\n");
+        return 1;
+    }
+    return 0;
+}

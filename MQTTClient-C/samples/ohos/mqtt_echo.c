@@ -31,9 +31,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-/* LWIP includes. */
-#include "lwip/sockets.h"
+#include <string.h>
 
 #include "MQTTClient.h"
 
