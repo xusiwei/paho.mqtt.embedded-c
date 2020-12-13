@@ -37,7 +37,7 @@ static unsigned int MqttTestCmd(int argc, const char **argv)
 {
     printf("%s @ %s +%d\r\n", __FUNCTION__, __FILE__, __LINE__);
     if (argc < 2) {
-        printf("Usage: AT+MQTT=host,port\r\n");
+        printf("Usage: AT+MQTT=host,port[clientId,username,password]\r\n");
         printf("FAIL\r\n");
         return 1;
     }
@@ -51,11 +51,27 @@ static unsigned int MqttTestCmd(int argc, const char **argv)
     unsigned short port = atoi(argv[1]);
     printf("MQTT test with %s %d start.\r\n", host, port);
 
-    int rc = MqttEchoTest(host, port);
+    const char* clientId = argc > 2 ? argv[2] : "EchoClient";
+    const char* username = argc > 3 ? argv[3] : NULL;
+    const char* password = argc > 4 ? argv[4] : NULL;
+    printf("clientId = %s\r\n", clientId);
+    printf("username = %s\r\n", username);
+    printf("password = %s\r\n", password);
+
+    if (MqttEchoConnect(host, port, clientId, username, password) != 0) {
+        printf("MqttEchoConnect failed!\r\n");
+        printf("ERROR\r\n");
+        return 1;
+    }
+
+    int rc = MqttEchoTest("OHOS/sample/a");
     if (rc != 0) {
         printf("ERROR\r\n");
         return 1;
     }
+
+    MqttEchoDisconnect();
+
     printf("OK\r\n");
     return 0;
 }

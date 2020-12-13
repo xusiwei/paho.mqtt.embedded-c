@@ -223,4 +223,21 @@ int ThreadStart(Thread* t, void (*fn)(void*), void* arg)
     }
     return 0;
 }
+
+void ThreadJoin(Thread* t)
+{
+    (void) t;
+    // osThreadJoin(t->thread);
+}
+
+#include <unistd.h>
+void Sleep(int ms)
+{
+    uint32_t tickFreq = osKernelGetTickFreq();
+    osDelay(ms / tickFreq);
+    uint32_t restMs = ms % tickFreq;
+    if (restMs) {
+        usleep(restMs * 1000);
+    }
+}
 #endif

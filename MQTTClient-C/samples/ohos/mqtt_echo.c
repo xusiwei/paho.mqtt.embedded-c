@@ -26,8 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-/* Standard includes. */
+#include "mqtt_echo.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,80 +34,160 @@
 
 #include "MQTTClient.h"
 
+#ifdef CMSIS
+#include "cmsis_os2.h"
+#define LOGI(fmt, ...) printf("[%p] " fmt "\n", osThreadGetId(), ##__VA_ARGS__)
+#else
+#define _GNU_SOURCE // for syscall
+#include <unistd.h>
+#include <sys/syscall.h>
+static long gettid(void)
+{
+    return syscall(SYS_gettid);
+}
+#define LOGI(fmt, ...) printf("[%ld] " fmt "\n", gettid(), ##__VA_ARGS__)
+#endif
+
 #define PUB_MSG_NUM 10
 
-static void OnMessageArrived(MessageData* data)
-{
-    printf("Message arrived on topic %.*s: %.*s\n", data->topicName->lenstring.len, data->topicName->lenstring.data,
-        data->message->payloadlen, data->message->payload);
-}
+static MQTTClient client = {0};
+static Network network = {0};
+static unsigned char sendbuf[80], readbuf[80];
 
-MQTTClient client = {0};
-Network network = {0};
-unsigned char sendbuf[80], readbuf[80];
+#if (defined MQTT_TASK)
+static void HandleMessage(void* arg)
+{
+    MQTTClient* c = (MQTTClient*) arg;
+    while (c) {
+        MutexLock(&c->mutex);
+        if (!c->running) {
+            LOGI("MQTT background thread exit!");
+            break;
+        }
+        MutexUnlock(&c->mutex);
+
+        MutexLock(&c->mutex);
+        if (c->isconnected) {
+            LOGI("recving...");
+            MQTTYield(c, 10);
+        }
+        MutexUnlock(&c->mutex);
+
+        // LOGI("waiting...");
+        Sleep(10);
+    }
+}
+#endif
 
 // in Hi3861 SDK, we can not create task in AT command execution context.
 void MqttEchoInit(void)
 {
-    int rc = 0;
     NetworkInit(&network);
-    MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
+    MQTTClientInit(&client, &network, 300, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
 
-    if ((rc = MQTTStartTask(&client)) != 0) {
-        printf("Return code from MQTTStartTask is %d\n", rc);
-    }
+#if (defined MQTT_TASK)
+    ThreadStart(&client.thread, HandleMessage, &client);
+#endif
 }
 
 void MqttEchoDeinit(void)
 {
-    int rc = 0;
-    if ((rc = MQTTStopTask(&client)) != 0) {
-        printf("Return code from MQTTStopTask is %d\n", rc);
-    }
+#if (defined MQTT_TASK)
+    client.running = 0;
+    ThreadJoin(&client.thread);
+#endif
 }
 
-int MqttEchoTest(const char* host, unsigned short port)
+int MqttEchoConnect(const char* host, unsigned short port,
+    const char* clientId, const char* username, const char* password)
 {
-    int rc = 0, i = 0;
+    int rc = 0;
     MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
+    // connect to server with TCP socket
     if ((rc = NetworkConnect(&network, (char*) host, port)) != 0) {
-        printf("Return code from NetworkConnect is %d\n", rc);
+        LOGI("Return code from NetworkConnect is %d", rc);
         return -1;
 	}
 
+    if (username != NULL && password != NULL) {
+        connectData.username.cstring = (char*) username;
+        connectData.password.cstring = (char*) password;
+    }
     connectData.MQTTVersion = 3;
-    connectData.clientID.cstring = "OHOS_sample";
+    connectData.clientID.cstring = (char*) clientId;
 
+    // send MQTT CONNECT packet
     if ((rc = MQTTConnect(&client, &connectData)) != 0) {
-        printf("Return code from MQTT connect is %d\n", rc);
-    } else {
-        printf("MQTT Connected!\n");
+        LOGI("Return code from MQTT connect is %d", rc);
+        return -1;
+    }
+    LOGI("MQTT Connected!");
+    return 0;
+}
+
+static void OnMessageArrived(MessageData* data)
+{
+    LOGI("Message arrived on topic %.*s: %.*s", data->topicName->lenstring.len, data->topicName->lenstring.data,
+        data->message->payloadlen, data->message->payload);
+}
+
+int MqttEchoSubscribe(char* topic)
+{
+    int rc = 0;
+    if ((rc = MQTTSubscribe(&client, topic, QOS2, OnMessageArrived)) != 0) {
+        LOGI("Return code from MQTT subscribe is %d", rc);
+        return -1;
+    }
+    return 0;
+}
+
+int MqttEchoPublish(char* topic, char* payload)
+{
+    int rc = 0;
+    MQTTMessage message;
+
+    message.qos = QOS1;
+    message.retained = 0;
+    message.payload = payload;
+    message.payloadlen = strlen(payload);
+
+    if ((rc = MQTTPublish(&client, topic, &message)) != 0) {
+        LOGI("Return code from MQTT publish is %d", rc);
+        return -1;
+    }
+    return 0;
+}
+
+int MqttEchoDisconnect(void)
+{
+    int rc = 0;
+    // send MQTT DISCONNECT packet
+    if ((rc = MQTTDisconnect(&client)) != 0) {
+        LOGI("Return code from MQTT disconnect is %d", rc);
+        return -1;
     }
 
-    if ((rc = MQTTSubscribe(&client, "OHOS/sample/#", 2, OnMessageArrived)) != 0) {
-        printf("Return code from MQTT subscribe is %d\n", rc);
-    }
+    // disconnect TCP socket with server
+    NetworkDisconnect(&network);
+    return 0;
+}
+
+int MqttEchoTest(char* topic)
+{
+    int i;
+    MqttEchoSubscribe(topic);
 
     for (i = 1; i <= PUB_MSG_NUM; i++) {
-        MQTTMessage message;
         char payload[30];
-
-        message.qos = 1;
-        message.retained = 0;
-        message.payload = payload;
-        sprintf(payload, "message number %d", i);
-        message.payloadlen = strlen(payload);
-
-        if ((rc = MQTTPublish(&client, "OHOS/sample/a", &message)) != 0) {
-            printf("Return code from MQTT publish is %d\n", rc);
-        }
+        sprintf(payload, "{message_number: %d}", i);
+        MqttEchoPublish(topic, payload);
+        LOGI("message '%s' published!", payload);
     }
 
-    if ((rc = MQTTDisconnect(&client)) != 0) {
-        printf("Return code from MQTT disconnect is %d\n", rc);
-    }
-
-    NetworkDisconnect(&network);
+#if !(defined MQTT_TASK)
+    MQTTYield(&client, 1000);
+#endif
+    Sleep(200);
     return 0;
 }

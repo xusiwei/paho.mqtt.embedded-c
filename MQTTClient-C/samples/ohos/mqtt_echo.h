@@ -30,7 +30,18 @@
 #define MQTT_ECHO_H
 
 void MqttEchoInit(void);
-int MqttEchoTest(const char* host, unsigned short port);
+
+int MqttEchoConnect(const char* host, unsigned short port,
+    const char* clientId, const  char* username, const char* password);
+
+// int MqttEchoSubscribe(char* topic);
+
+// int MqttEchoPublish(char* topic, char* payload);
+
+int MqttEchoTest(char* topic);
+
+int MqttEchoDisconnect(void);
+
 void MqttEchoDeinit(void);
 
-#endif
+#endif  // MQTT_ECHO_H

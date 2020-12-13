@@ -25,61 +25,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-ohos_sources = [
-   "mqtt_echo.c",
-]
+add_executable(
+  mqtt_echo
+  mqtt_echo.c
+  mqtt_echo_main.c
+  ../../src/ohos/mqtt_ohos_posix.c
+  ../../src/linux/MQTTLinux.c
+  ../../src/MQTTClient.c
+)
 
-ohos_includes = [
-    "../../src",
-    "../../src/ohos",
-    "../../../MQTTPacket/src",
-]
-
-ohos_cflags = [
-    "-Wno-sign-compare",
-    "-Wno-unused-parameter",
-]
-
-ohos_defines = [
-    "MQTT_TASK",
-    "MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h"
-]
-
-if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
-    ohos_sources += [
-        "mqtt_at_entry.c"
-    ]
-
-    ohos_includes += [
-        "//kernel/liteos_m/kal",
-        "//base/iot_hardware/interfaces/kits/wifiiot_lite",
-        "//vendor/hisi/hi3861/hi3861/third_party/lwip_sack/include"
-    ]
-
-    ohos_defines += [
-        "CMSIS"
-    ]
-
-    static_library("mqtt_echo") {
-        cflags = ohos_cflags
-        defines = ohos_defines
-        sources = ohos_sources
-        include_dirs = ohos_includes
-    }
-} else {
-    ohos_sources += [
-        "mqtt_echo_main.c"
-    ]
-
-    deps = [
-        "../../src:paho-embed-mqtt3cc",
-        "../../../MQTTPacket/src:paho-embed-mqtt3c",
-    ]
-
-    executable("mqtt_echo") {
-        cflags = ohos_cflags
-        defines = ohos_defines
-        sources = ohos_sources
-        include_dirs = ohos_includes
-    }
-}
+target_link_libraries(mqtt_echo paho-embed-mqtt3c)
+target_link_libraries(mqtt_echo pthread)
+target_include_directories(mqtt_echo PRIVATE "../../src" "../../src/ohos" "../../src/linux")
+target_compile_definitions(mqtt_echo PRIVATE MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h)
+target_compile_definitions(mqtt_echo PRIVATE MQTT_TASK)

@@ -87,6 +87,8 @@ int MutexUnlock(Mutex* mutex);
 void MutexDeinit(Mutex* mutex);
 
 int ThreadStart(Thread* thread, void (*fn)(void*), void* arg);
+void ThreadJoin(Thread* thread);
+void Sleep(int ms);
 #endif
 
 #endif // MQTT_OHOS_H

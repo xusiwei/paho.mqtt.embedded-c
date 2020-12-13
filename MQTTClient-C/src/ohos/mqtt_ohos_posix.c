@@ -27,12 +27,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "mqtt_ohos.h"
+#include <unistd.h>
+#include <pthread.h>
 
 #if defined(MQTT_TASK)
 
 void MutexInit(Mutex* m)
 {
-    pthread_mutex_create(&m->mutex, NULL);
+    pthread_mutex_init(&m->mutex, NULL);
 }
 
 int MutexLock(Mutex* m)
@@ -42,17 +44,26 @@ int MutexLock(Mutex* m)
 
 int MutexUnlock(Mutex* m)
 {
-    return pthread_mutex_unlock(m->mutex);
+    return pthread_mutex_unlock(&m->mutex);
 }
 
 void MutexDeinit(Mutex* m)
 {
-    pthread_mutex_destroy(m->mutex);
+    pthread_mutex_destroy(&m->mutex);
 }
 
 int ThreadStart(Thread* t, void (*fn)(void*), void* arg)
 {
-    return pthread_create(&t->thread, NULL, (int(*)(void*))fn, arg);
+    return pthread_create(&t->thread, NULL, (void*(*)(void*))fn, arg);
 }
 
+void ThreadJoin(Thread* t)
+{
+    pthread_join(t->thread, NULL);
+}
+
+void Sleep(int ms)
+{
+    usleep(ms * 1000);
+}
 #endif

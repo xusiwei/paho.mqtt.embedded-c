@@ -29,9 +29,13 @@ ohos_sources = [
     "MQTTClient.c"
 ]
 
-ohos_defines = []
+ohos_defines = [
+    "MQTT_TASK",
+    "MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h"
+]
 
 ohos_includes = [
+    "ohos",
     "../../MQTTPacket/src"
 ]
 
@@ -40,12 +44,9 @@ if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
         "ohos/mqtt_ohos_cmsis.c"
     ]
     ohos_defines += [
-        "MQTT_TASK",
         "OHOS_CMSIS",
-        "MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h"
     ]
     ohos_includes += [
-        "ohos",
         "//kernel/liteos_m/kal",
         "//vendor/hisi/hi3861/hi3861/third_party/lwip_sack/include"
     ]
@@ -56,10 +57,6 @@ if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
     ]
     ohos_defines += [
         "_GNU_SOURCE",
-        "MQTTCLIENT_PLATFORM_HEADER=MQTTLinux.h"
-    ]
-    ohos_includes += [
-        "linux"
     ]
 }
 
