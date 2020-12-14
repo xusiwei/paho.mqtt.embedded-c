@@ -27,6 +27,6 @@
 
 group("paho-mqtt-samples") {
     deps = [
-        "ohos:mqtt_echo"
+        "ohos:mqtt_test"
     ]
 }

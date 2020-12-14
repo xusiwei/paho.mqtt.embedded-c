@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ohos_sources = [
-   "mqtt_echo.c",
+   "mqtt_test.c",
 ]
 
 ohos_includes = [
@@ -60,7 +60,7 @@ if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
         "CMSIS"
     ]
 
-    static_library("mqtt_echo") {
+    static_library("mqtt_test") {
         cflags = ohos_cflags
         defines = ohos_defines
         sources = ohos_sources
@@ -68,7 +68,7 @@ if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
     }
 } else {
     ohos_sources += [
-        "mqtt_echo_main.c"
+        "mqtt_test_main.c"
     ]
 
     deps = [
@@ -76,7 +76,7 @@ if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
         "../../../MQTTPacket/src:paho-embed-mqtt3c",
     ]
 
-    executable("mqtt_echo") {
+    executable("mqtt_test") {
         cflags = ohos_cflags
         defines = ohos_defines
         sources = ohos_sources

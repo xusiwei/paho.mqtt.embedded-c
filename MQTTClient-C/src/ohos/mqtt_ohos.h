@@ -69,6 +69,7 @@ typedef struct {
 #endif
 
 #else // OHOS_CMSIS
+#define __USE_GNU
 #include <pthread.h>
 
 typedef struct {
@@ -88,6 +89,7 @@ void MutexDeinit(Mutex* mutex);
 
 int ThreadStart(Thread* thread, void (*fn)(void*), void* arg);
 void ThreadJoin(Thread* thread);
+void ThreadYield(void);
 void Sleep(int ms);
 #endif
 

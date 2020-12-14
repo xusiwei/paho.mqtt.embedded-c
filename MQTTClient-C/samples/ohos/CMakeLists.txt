@@ -26,16 +26,16 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 add_executable(
-  mqtt_echo
-  mqtt_echo.c
-  mqtt_echo_main.c
+  mqtt_test
+  mqtt_test.c
+  mqtt_test_main.c
   ../../src/ohos/mqtt_ohos_posix.c
   ../../src/linux/MQTTLinux.c
   ../../src/MQTTClient.c
 )
 
-target_link_libraries(mqtt_echo paho-embed-mqtt3c)
-target_link_libraries(mqtt_echo pthread)
-target_include_directories(mqtt_echo PRIVATE "../../src" "../../src/ohos" "../../src/linux")
-target_compile_definitions(mqtt_echo PRIVATE MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h)
-target_compile_definitions(mqtt_echo PRIVATE MQTT_TASK)
+target_link_libraries(mqtt_test paho-embed-mqtt3c)
+target_link_libraries(mqtt_test pthread)
+target_include_directories(mqtt_test PRIVATE "../../src" "../../src/ohos" "../../src/linux")
+target_compile_definitions(mqtt_test PRIVATE MQTTCLIENT_PLATFORM_HEADER=mqtt_ohos.h)
+target_compile_definitions(mqtt_test PRIVATE MQTT_TASK)

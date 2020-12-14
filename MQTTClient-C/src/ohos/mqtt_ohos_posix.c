@@ -27,39 +27,62 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "mqtt_ohos.h"
+#include <errno.h>
+#include <string.h>
+#include <fcntl.h>
 #include <unistd.h>
-#include <pthread.h>
+#include <stdio.h>
+#include <sys/syscall.h>
+
+static long gettid(void)
+{
+    return syscall(SYS_gettid);
+}
+#define LOGI(fmt, ...) printf("[%ld] " fmt "\n", gettid(), ##__VA_ARGS__)
 
 #if defined(MQTT_TASK)
 
+#define CHECK(expr) (({ \
+    int rc = (expr); \
+    if (rc != 0) { \
+        printf("%s: %d failed: %s!\n", #expr, rc, strerror(rc)); \
+    } \
+    rc; \
+}))
+
 void MutexInit(Mutex* m)
 {
-    pthread_mutex_init(&m->mutex, NULL);
+    CHECK(pthread_mutex_init(&m->mutex, NULL));
 }
 
 int MutexLock(Mutex* m)
 {
-    return pthread_mutex_lock(&m->mutex);
+    return CHECK(pthread_mutex_lock(&m->mutex));
 }
 
 int MutexUnlock(Mutex* m)
 {
-    return pthread_mutex_unlock(&m->mutex);
+    return CHECK(pthread_mutex_unlock(&m->mutex));
 }
 
 void MutexDeinit(Mutex* m)
 {
-    pthread_mutex_destroy(&m->mutex);
+    CHECK(pthread_mutex_destroy(&m->mutex));
 }
 
 int ThreadStart(Thread* t, void (*fn)(void*), void* arg)
 {
-    return pthread_create(&t->thread, NULL, (void*(*)(void*))fn, arg);
+    return CHECK(pthread_create(&t->thread, NULL, (void*(*)(void*))fn, arg));
 }
 
 void ThreadJoin(Thread* t)
 {
-    pthread_join(t->thread, NULL);
+    CHECK(pthread_join(t->thread, NULL));
+}
+
+void ThreadYield()
+{
+    CHECK(pthread_yield());
 }
 
 void Sleep(int ms)

@@ -29,12 +29,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mqtt_echo.h"
+#include "mqtt_test.h"
 
 int main(int argc, char* argv[])
 {
     if (argc < 2) {
-        printf("Usage %s host [port] [clientId] [username] [password]", argv[0]);
+        printf("Usage %s host [port] [clientId] [username] [password]\n", argv[0]);
         return 1;
     }
     const char* host = argv[1];
@@ -48,20 +48,20 @@ int main(int argc, char* argv[])
     printf("username = %s\n", username);
     printf("password = %s\n", password);
 
-    MqttEchoInit();
+    MqttTestInit();
 
-    if (MqttEchoConnect(host, port, clientId, username, password) != 0) {
-        printf("MqttEchoConnect failed!\n");
+    if (MqttTestConnect(host, port, clientId, username, password) != 0) {
+        printf("MqttTestConnect failed!\n");
         return 1;
     }
 
-    int rc = MqttEchoTest("OHOS/sample/a");
+    int rc = MqttTestEcho("OHOS/sample/a");
     if (rc != 0) {
-        printf("MqttEchoTest ERROR\r\n");
+        printf("MqttTestEcho ERROR\r\n");
         return 1;
     }
 
-    MqttEchoDisconnect();
-    MqttEchoDeinit();
+    MqttTestDisconnect();
+    MqttTestDeinit();
     return 0;
 }

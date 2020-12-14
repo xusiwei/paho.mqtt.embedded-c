@@ -26,22 +26,22 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef MQTT_ECHO_H
-#define MQTT_ECHO_H
+#ifndef MQTT_TEST_H
+#define MQTT_TEST_H
 
-void MqttEchoInit(void);
+void MqttTestInit(void);
 
-int MqttEchoConnect(const char* host, unsigned short port,
+int MqttTestConnect(const char* host, unsigned short port,
     const char* clientId, const  char* username, const char* password);
 
-// int MqttEchoSubscribe(char* topic);
+int MqttTestSubscribe(char* topic);
 
-// int MqttEchoPublish(char* topic, char* payload);
+int MqttTestPublish(char* topic, char* payload);
 
-int MqttEchoTest(char* topic);
+int MqttTestEcho(char* topic);
 
-int MqttEchoDisconnect(void);
+int MqttTestDisconnect(void);
 
-void MqttEchoDeinit(void);
+void MqttTestDeinit(void);
 
-#endif  // MQTT_ECHO_H
+#endif  // MQTT_TEST_H

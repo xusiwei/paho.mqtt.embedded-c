@@ -29,6 +29,10 @@
 #include "mqtt_ohos.h"
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
+#include <stdio.h>
+
+#include "cmsis_os2.h"
+#define LOGD(fmt, ...) printf("[%d] %s " fmt "\n", osKernelGetTickCount(), osThreadGetName(osThreadGetId()), ##__VA_ARGS__)
 
 #define US_PER_SEC (1000*1000)
 
@@ -107,6 +111,7 @@ static int NetworkRead(Network* network, unsigned char* buffer, int len, int tim
         interval.tv_usec = 100;
     }
 
+    // LOGD("read with timeout = %d", timeoutMs);
     setsockopt(network->socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval, sizeof(struct timeval));
 
     int bytes = 0;
@@ -214,11 +219,13 @@ void MutexDeinit(Mutex* m)
 int ThreadStart(Thread* t, void (*fn)(void*), void* arg)
 {
     osThreadAttr_t attr = {0};
+    attr.name = "MqttTask";
     attr.stack_size = MQTT_TASK_STACK_SIZE;
     attr.priority = osPriorityNormal;
 
     t->thread = osThreadNew(fn, arg, &attr);
     if (t->thread == NULL) {
+        printf("osThreadNew failed!\r\n");
         return -1;
     }
     return 0;
@@ -228,14 +235,22 @@ void ThreadJoin(Thread* t)
 {
     (void) t;
     // osThreadJoin(t->thread);
+    osDelay(1);
+}
+
+void ThreadYield(void)
+{
+    osStatus_t rc = osThreadYield();
+    printf("osThreadYield: %d!\n", rc);
 }
 
 #include <unistd.h>
 void Sleep(int ms)
 {
     uint32_t tickFreq = osKernelGetTickFreq();
-    osDelay(ms / tickFreq);
-    uint32_t restMs = ms % tickFreq;
+    uint32_t msPerTick = 1000 / tickFreq;
+    osDelay(ms / msPerTick);
+    uint32_t restMs = ms % msPerTick;
     if (restMs) {
         usleep(restMs * 1000);
     }
