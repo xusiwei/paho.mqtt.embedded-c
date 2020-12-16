@@ -82,7 +82,9 @@ void ThreadJoin(Thread* t)
 
 void ThreadYield()
 {
+#if (defined __linux__)
     CHECK(pthread_yield());
+#endif
 }
 
 void Sleep(int ms)

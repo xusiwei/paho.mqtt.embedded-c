@@ -32,6 +32,7 @@
 #include <stdio.h>
 
 #include "cmsis_os2.h"
+
 #define LOGD(fmt, ...) printf("[%d] %s " fmt "\n", osKernelGetTickCount(), osThreadGetName(osThreadGetId()), ##__VA_ARGS__)
 
 #define US_PER_SEC (1000*1000)
@@ -39,6 +40,68 @@
 static uint32_t g_tickPerSec = 0;
 static uint32_t g_sysPerSec = 0;
 static uint32_t g_sysPerTick = 0;
+
+#if defined(MQTT_TASK)
+void MutexInit(Mutex* m)
+{
+    m->mutex = osMutexNew(NULL);
+}
+
+int MutexLock(Mutex* m)
+{
+    return osMutexAcquire(m->mutex, osWaitForever);
+}
+
+int MutexUnlock(Mutex* m)
+{
+    return osMutexRelease(m->mutex);
+}
+
+void MutexDeinit(Mutex* m)
+{
+    osMutexDelete(m->mutex);
+}
+
+int ThreadStart(Thread* t, void (*fn)(void*), void* arg)
+{
+    osThreadAttr_t attr = {0};
+    attr.name = "MqttTask";
+    attr.stack_size = MQTT_TASK_STACK_SIZE;
+    attr.priority = osPriorityNormal;
+
+    t->thread = osThreadNew(fn, arg, &attr);
+    if (t->thread == NULL) {
+        printf("osThreadNew failed!\r\n");
+        return -1;
+    }
+    return 0;
+}
+
+void ThreadJoin(Thread* t)
+{
+    (void) t;
+    // osThreadJoin(t->thread);
+    osDelay(1);
+}
+
+void ThreadYield(void)
+{
+    osStatus_t rc = osThreadYield();
+    printf("osThreadYield: %d!\n", rc);
+}
+
+#include <unistd.h>
+void Sleep(int ms)
+{
+    uint32_t tickFreq = osKernelGetTickFreq();
+    uint32_t msPerTick = 1000 / tickFreq;
+    osDelay(ms / msPerTick);
+    uint32_t restMs = ms % msPerTick;
+    if (restMs) {
+        usleep(restMs * 1000);
+    }
+}
+#endif
 
 static int GetCurrentTime(struct timeval* now)
 {
@@ -56,6 +119,23 @@ static int GetCurrentTime(struct timeval* now)
 }
 
 #define gettimeofday(tv, tz) GetCurrentTime(tv)
+
+/*******************************************************************************
+ * Copyright (c) 2014, 2017 IBM Corp.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
+ *
+ * The Eclipse Public License is available at
+ *    http://www.eclipse.org/legal/epl-v10.html
+ * and the Eclipse Distribution License is available at
+ *   http://www.eclipse.org/org/documents/edl-v10.php.
+ *
+ * Contributors:
+ *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
+ *    Ian Craggs - return codes from linux_read
+ *******************************************************************************/
 
 void TimerInit(Timer* timer)
 {
@@ -194,65 +274,3 @@ void NetworkDisconnect(Network* network)
 {
     lwip_close(network->socket);
 }
-
-#if defined(MQTT_TASK)
-void MutexInit(Mutex* m)
-{
-    m->mutex = osMutexNew(NULL);
-}
-
-int MutexLock(Mutex* m)
-{
-    return osMutexAcquire(m->mutex, osWaitForever);
-}
-
-int MutexUnlock(Mutex* m)
-{
-    return osMutexRelease(m->mutex);
-}
-
-void MutexDeinit(Mutex* m)
-{
-    osMutexDelete(m->mutex);
-}
-
-int ThreadStart(Thread* t, void (*fn)(void*), void* arg)
-{
-    osThreadAttr_t attr = {0};
-    attr.name = "MqttTask";
-    attr.stack_size = MQTT_TASK_STACK_SIZE;
-    attr.priority = osPriorityNormal;
-
-    t->thread = osThreadNew(fn, arg, &attr);
-    if (t->thread == NULL) {
-        printf("osThreadNew failed!\r\n");
-        return -1;
-    }
-    return 0;
-}
-
-void ThreadJoin(Thread* t)
-{
-    (void) t;
-    // osThreadJoin(t->thread);
-    osDelay(1);
-}
-
-void ThreadYield(void)
-{
-    osStatus_t rc = osThreadYield();
-    printf("osThreadYield: %d!\n", rc);
-}
-
-#include <unistd.h>
-void Sleep(int ms)
-{
-    uint32_t tickFreq = osKernelGetTickFreq();
-    uint32_t msPerTick = 1000 / tickFreq;
-    osDelay(ms / msPerTick);
-    uint32_t restMs = ms % msPerTick;
-    if (restMs) {
-        usleep(restMs * 1000);
-    }
-}
-#endif
