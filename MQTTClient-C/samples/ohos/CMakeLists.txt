@@ -28,7 +28,7 @@
 add_executable(
   mqtt_test
   mqtt_test.c
-  mqtt_test_main.c
+  mqtt_test_posix.c
   ../../src/ohos/mqtt_ohos_posix.c
   ../../src/linux/MQTTLinux.c
   ../../src/MQTTClient.c

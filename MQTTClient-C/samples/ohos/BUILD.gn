@@ -47,7 +47,7 @@ ohos_defines = [
 
 if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
     ohos_sources += [
-        "mqtt_at_entry.c"
+        "mqtt_test_cmsis.c"
     ]
 
     ohos_includes += [
@@ -68,7 +68,7 @@ if (ohos_kernel_type == "liteos_riscv" || ohos_kernel_type == "liteos_m") {
     }
 } else {
     ohos_sources += [
-        "mqtt_test_main.c"
+        "mqtt_test_posix.c"
     ]
 
     deps = [
